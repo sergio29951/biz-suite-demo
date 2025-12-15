@@ -8,14 +8,11 @@ import 'customer_form_page.dart';
 import 'models/customer.dart';
 
 class CustomersPage extends StatelessWidget {
-  CustomersPage({super.key})
-      : _controller = CustomersController(
-          repository: CustomersRepository(),
-        );
-  final CustomersController _controller;
+  const CustomersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<CustomersController>(context, listen: false);
     final session = Provider.of<WorkspaceSession>(context, listen: true);
     final activeWorkspaceId = session.activeWorkspaceId;
     final workspaceRole = session.memberRole ?? 'admin';
@@ -33,7 +30,7 @@ class CustomersPage extends StatelessWidget {
         title: const Text('Clienti'),
       ),
       body: StreamBuilder<List<Customer>>(
-        stream: _controller.watchList(activeWorkspaceId),
+        stream: controller.watchList(activeWorkspaceId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -90,6 +87,7 @@ class CustomersPage extends StatelessWidget {
                   onTap: () => _openForm(
                     context,
                     activeWorkspaceId,
+                    controller,
                     customer: customer,
                   ),
                 ),
@@ -99,19 +97,23 @@ class CustomersPage extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(context, activeWorkspaceId),
+        onPressed: () => _openForm(context, activeWorkspaceId, controller),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Future<void> _openForm(BuildContext context, String workspaceId,
-      {Customer? customer}) async {
+  Future<void> _openForm(
+    BuildContext context,
+    String workspaceId,
+    CustomersController controller, {
+    Customer? customer,
+  }) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => CustomerFormPage(
           workspaceId: workspaceId,
-          controller: _controller,
+          controller: controller,
           customer: customer,
         ),
       ),
@@ -124,6 +126,7 @@ class CustomersPage extends StatelessWidget {
     Customer customer,
     String workspaceRole,
   ) async {
+    final controller = Provider.of<CustomersController>(context, listen: false);
     if (!canDeleteCustomers(workspaceRole)) {
       return false;
     }
@@ -147,7 +150,7 @@ class CustomersPage extends StatelessWidget {
 
     if (shouldDelete == true) {
       try {
-        await _controller.delete(workspaceId, customer.id);
+        await controller.delete(workspaceId, customer.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cliente eliminato')),

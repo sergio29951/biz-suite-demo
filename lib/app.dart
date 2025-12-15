@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,9 +9,14 @@ import 'features/auth/login_page.dart';
 import 'core/session/workspace_session.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/customers/customers_page.dart';
+import 'features/customers/controllers/customers_controller.dart';
+import 'features/customers/data/customers_repository.dart';
 import 'features/offers/offers_page.dart';
+import 'features/offers/controllers/offers_controller.dart';
+import 'features/offers/data/offers_repository.dart';
 import 'features/staff/staff_page.dart';
 import 'features/transactions/transactions_page.dart';
+import 'features/transactions/data/transactions_repository.dart';
 import 'features/workspace/permissions.dart';
 
 class BizSuiteApp extends StatelessWidget {
@@ -73,8 +79,25 @@ class _FirebaseInitializer extends StatelessWidget {
               return const LoginPage();
             }
 
-            return ChangeNotifierProvider(
-              create: (_) => WorkspaceSession(),
+            return MultiProvider(
+              providers: [
+                Provider(
+                  create: (_) => CustomersController(
+                    repository: CustomersRepository(),
+                  ),
+                ),
+                Provider(
+                  create: (_) => OffersController(
+                    repository: OffersRepository(FirebaseFirestore.instance),
+                  ),
+                ),
+                Provider(
+                  create: (_) => TransactionsRepository(FirebaseFirestore.instance),
+                ),
+                ChangeNotifierProvider(
+                  create: (_) => WorkspaceSession(),
+                ),
+              ],
               child: const AppShell(),
             );
           },

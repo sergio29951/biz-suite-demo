@@ -1,10 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../customers/data/customers_repository.dart';
+import '../customers/controllers/customers_controller.dart';
 import '../customers/models/customer.dart';
-import '../offers/data/offers_repository.dart';
+import '../offers/controllers/offers_controller.dart';
 import '../offers/models/offer.dart';
 import 'data/transactions_repository.dart';
 import 'models/transaction.dart';
@@ -14,11 +13,15 @@ class TransactionFormPage extends StatefulWidget {
     super.key,
     required this.workspaceId,
     required this.repository,
+    required this.customersController,
+    required this.offersController,
     this.transaction,
   });
 
   final String workspaceId;
   final TransactionsRepository repository;
+  final CustomersController customersController;
+  final OffersController offersController;
   final WorkspaceTransaction? transaction;
 
   @override
@@ -37,9 +40,6 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _scheduledController = TextEditingController();
   bool _saving = false;
-
-  final _customersRepository = CustomersRepository(FirebaseFirestore.instance);
-  final _offersRepository = OffersRepository(FirebaseFirestore.instance);
 
   @override
   void initState() {
@@ -73,7 +73,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
             : 'Modifica transazione'),
       ),
       body: StreamBuilder<List<Customer>>(
-        stream: _customersRepository.watchCustomers(widget.workspaceId),
+        stream: widget.customersController.watchList(widget.workspaceId),
         builder: (context, customerSnapshot) {
           if (customerSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -81,7 +81,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
 
           final customers = customerSnapshot.data ?? [];
           return StreamBuilder<List<Offer>>(
-            stream: _offersRepository.watchOffers(widget.workspaceId),
+            stream: widget.offersController.watchList(widget.workspaceId),
             builder: (context, offersSnapshot) {
               if (offersSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());

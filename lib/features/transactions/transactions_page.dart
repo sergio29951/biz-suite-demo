@@ -1,18 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/session/workspace_session.dart';
 import '../workspace/permissions.dart';
+import '../customers/controllers/customers_controller.dart';
+import '../offers/controllers/offers_controller.dart';
 import 'data/transactions_repository.dart';
 import 'models/transaction.dart';
 import 'transaction_form_page.dart';
 
 class TransactionsPage extends StatefulWidget {
-  TransactionsPage({super.key})
-      : _repository = TransactionsRepository(FirebaseFirestore.instance);
-
-  final TransactionsRepository _repository;
+  const TransactionsPage({super.key});
 
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
@@ -28,6 +26,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final session = Provider.of<WorkspaceSession>(context, listen: true);
     final workspaceId = session.activeWorkspaceId;
     final role = session.memberRole;
+    final transactionsRepository =
+        Provider.of<TransactionsRepository>(context, listen: false);
+    final customersController =
+        Provider.of<CustomersController>(context, listen: false);
+    final offersController =
+        Provider.of<OffersController>(context, listen: false);
 
     if (workspaceId == null) {
       return const Scaffold(
@@ -56,7 +60,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
           Expanded(
             child: StreamBuilder<List<WorkspaceTransaction>>(
-              stream: widget._repository.watchTransactions(
+              stream: transactionsRepository.watchTransactions(
                 workspaceId,
                 from: dateWindow.from,
                 to: dateWindow.to,
@@ -104,9 +108,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => _openForm(
+                          onPressed: () => _openForm(
                               context,
                               workspaceId,
+                              customersController,
+                              offersController,
+                              transactionsRepository,
                               transaction: tx,
                             ),
                           ),
@@ -124,6 +131,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       onTap: () => _openForm(
                         context,
                         workspaceId,
+                        customersController,
+                        offersController,
+                        transactionsRepository,
                         transaction: tx,
                       ),
                     );
@@ -135,7 +145,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(context, workspaceId),
+        onPressed: () => _openForm(
+          context,
+          workspaceId,
+          customersController,
+          offersController,
+          transactionsRepository,
+        ),
         child: const Icon(Icons.add),
       ),
     );
@@ -143,14 +159,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   Future<void> _openForm(
     BuildContext context,
-    String workspaceId, {
+    String workspaceId,
+    CustomersController customersController,
+    OffersController offersController,
+    TransactionsRepository transactionsRepository, {
     WorkspaceTransaction? transaction,
   }) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TransactionFormPage(
           workspaceId: workspaceId,
-          repository: widget._repository,
+          repository: transactionsRepository,
+          customersController: customersController,
+          offersController: offersController,
           transaction: transaction,
         ),
       ),
@@ -162,6 +183,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
     String workspaceId,
     WorkspaceTransaction transaction,
   ) async {
+    final transactionsRepository =
+        Provider.of<TransactionsRepository>(context, listen: false);
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -182,7 +205,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     if (shouldDelete == true) {
       try {
-        await widget._repository.deleteTransaction(workspaceId, transaction.id);
+        await transactionsRepository.deleteTransaction(workspaceId, transaction.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Attività eliminata')),
