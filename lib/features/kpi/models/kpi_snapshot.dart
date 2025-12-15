@@ -65,8 +65,9 @@ class KpiSnapshot {
     });
 
     final totalTransactions = filtered.length;
-    final averageTicket =
-        totalTransactions == 0 ? 0 : totalRevenue / totalTransactions;
+    final averageTicket = totalTransactions == 0
+        ? 0.0
+        : (totalRevenue / totalTransactions).toDouble();
 
     final customerTotals = <String, _AggregateEntry>{};
     final offerTotals = <String, _AggregateEntry>{};
