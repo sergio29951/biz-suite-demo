@@ -1,0 +1,10 @@
+{
+  "name": "Biz Suite Demo",
+  "short_name": "BizSuite",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d47a1",
+  "description": "Web-first multi-tenant business suite demo",
+  "icons": []
+}
