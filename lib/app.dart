@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'features/auth/login_page.dart';
 import 'core/session/workspace_session.dart';
-import 'features/dashboard/dashboard_page.dart';
 import 'features/customers/customers_page.dart';
+import 'features/kpi/kpi_page.dart';
 import 'features/offers/offers_page.dart';
 import 'features/staff/staff_page.dart';
 import 'features/transactions/transactions_page.dart';
@@ -104,7 +104,7 @@ class _AppShellState extends State<AppShell> {
       const _ShellTab(
         label: 'Dashboard',
         icon: Icons.dashboard_outlined,
-        page: DashboardPage(),
+        page: KpiPage(),
       ),
       _ShellTab(
         label: 'Attività',
