@@ -1,0 +1,152 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/session/workspace_session.dart';
+import 'customer_form_page.dart';
+import 'data/customers_repository.dart';
+import 'models/customer.dart';
+
+class CustomersPage extends StatelessWidget {
+  CustomersPage({super.key, this.workspaceId});
+
+  final String? workspaceId;
+  final CustomersRepository _repository =
+      CustomersRepository(FirebaseFirestore.instance);
+
+  @override
+  Widget build(BuildContext context) {
+    final activeWorkspaceId = workspaceId ??
+        Provider.of<WorkspaceSession>(context, listen: true).activeWorkspaceId;
+
+    if (activeWorkspaceId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Seleziona un workspace per gestire i clienti.'),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Clienti'),
+      ),
+      body: StreamBuilder<List<Customer>>(
+        stream: _repository.watchCustomers(activeWorkspaceId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Errore nel caricamento: ${snapshot.error}'),
+            );
+          }
+
+          final customers = snapshot.data ?? [];
+          if (customers.isEmpty) {
+            return const Center(
+              child: Text('Nessun cliente ancora. Aggiungine uno.'),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: customers.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final customer = customers[index];
+              return Dismissible(
+                key: ValueKey(customer.id),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (_) => _confirmDelete(context, customer),
+                background: Container(
+                  color: Colors.red.withOpacity(0.1),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: const Icon(Icons.delete, color: Colors.red),
+                ),
+                child: ListTile(
+                  title: Text(customer.fullName),
+                  subtitle: Text(customer.phone),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _confirmDelete(context, customer),
+                  ),
+                  onTap: () => _openForm(
+                    context,
+                    activeWorkspaceId,
+                    customer: customer,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openForm(context, activeWorkspaceId),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Future<void> _openForm(BuildContext context, String workspaceId,
+      {Customer? customer}) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CustomerFormPage(
+          workspaceId: workspaceId,
+          repository: _repository,
+          customer: customer,
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context, Customer customer) async {
+    final workspaceId = workspaceId ??
+        Provider.of<WorkspaceSession>(context, listen: false).activeWorkspaceId;
+    if (workspaceId == null) return false;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminare cliente?'),
+        content: Text('Vuoi eliminare ${customer.fullName}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      try {
+        await _repository.deleteCustomer(workspaceId, customer.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cliente eliminato')),
+          );
+        }
+        return true;
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Errore eliminazione: $e')),
+          );
+        }
+        return false;
+      }
+    }
+
+    return false;
+  }
+}

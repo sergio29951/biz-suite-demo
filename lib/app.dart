@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 import 'features/auth/login_page.dart';
 import 'core/session/workspace_session.dart';
 import 'features/dashboard/dashboard_page.dart';
+import 'features/customers/customers_page.dart';
 
 class BizSuiteApp extends StatelessWidget {
   const BizSuiteApp({super.key});
@@ -93,6 +94,7 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final pages = <Widget>[
       const DashboardPage(),
+      CustomersPage(),
       const Center(child: Text('Impostazioni')), // placeholder tab
     ];
 
@@ -108,6 +110,10 @@ class _AppShellState extends State<AppShell> {
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
             label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_alt_outlined),
+            label: 'Clienti',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
