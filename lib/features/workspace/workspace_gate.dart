@@ -1,14 +1,15 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../app.dart';
 import '../../core/session/workspace_session.dart';
-import 'models/workspace_option.dart';
+import 'controllers/workspace_controller.dart';
 import 'create_workspace_page.dart';
+import 'data/workspace_repository.dart';
+import 'models/workspace_option.dart';
 import 'workspace_picker_page.dart';
 
 class WorkspaceGate extends StatefulWidget {
@@ -21,75 +22,26 @@ class WorkspaceGate extends StatefulWidget {
 }
 
 class _WorkspaceGateState extends State<WorkspaceGate> {
-  late final Future<_WorkspaceGateData> _gateFuture;
+  late final WorkspaceRepository _repository;
+  late final WorkspaceController _controller;
+  late final Future<List<WorkspaceMembership>> _membershipsFuture;
 
   @override
   void initState() {
     super.initState();
-    _gateFuture = _loadData();
-  }
-
-  Future<_WorkspaceGateData> _loadData() async {
-    final firestore = FirebaseFirestore.instance;
-    final uid = widget.user.uid;
-
-    final userDoc = await firestore.collection('users').doc(uid).get();
-    final role = (userDoc.data()?['role'] as String?) ?? 'business';
-
-    if (role == 'customer') {
-      return _WorkspaceGateData(role: role, workspaces: const []);
-    }
-
-    final membershipQuery = await firestore
-        .collection('memberships')
-        .where('uid', isEqualTo: uid)
-        .get();
-
-    if (membershipQuery.docs.isEmpty) {
-      return _WorkspaceGateData(role: role, workspaces: const []);
-    }
-
-    final futures = membershipQuery.docs.map((doc) async {
-      final data = doc.data();
-      final workspaceId = data['workspaceId'] as String?;
-      if (workspaceId == null || workspaceId.isEmpty) {
-        return null;
-      }
-
-      final workspaceSnap =
-          await firestore.collection('workspaces').doc(workspaceId).get();
-      final workspaceData = workspaceSnap.data();
-      if (!workspaceSnap.exists || workspaceData == null) {
-        return null;
-      }
-
-      final memberRole = _normalizeRole(data['role'] as String?);
-
-      return _WorkspaceMembership(
-        option: WorkspaceOption(
-          id: workspaceSnap.id,
-          name: workspaceData['name'] as String? ?? 'Workspace',
-        ),
-        role: memberRole,
-      );
-    });
-
-    final results = await Future.wait(futures);
-    return _WorkspaceGateData(
-      role: role,
-      workspaces: results.whereType<_WorkspaceMembership>().toList(),
+    _repository = WorkspaceRepository();
+    _controller = WorkspaceController(
+      repository: _repository,
+      session: context.read<WorkspaceSession>(),
     );
-  }
-
-  static String _normalizeRole(String? role) {
-    if (role == 'owner') return 'admin';
-    if (role == null || role.isEmpty) return 'staff';
-    return role;
+    final uid = (widget.user as dynamic).uid as String;
+    _membershipsFuture = _controller
+        .resolveInitialWorkspace(uid)
+        .then((value) => value.memberships);
   }
 
   void _selectWorkspace(String workspaceId, {String? role}) {
-    final session = context.read<WorkspaceSession>();
-    session.setActiveWorkspaceId(workspaceId, role: role);
+    _controller.setActive(workspaceId, role: role);
   }
 
   @override
@@ -99,8 +51,8 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
       return const AppShell();
     }
 
-    return FutureBuilder<_WorkspaceGateData>(
-      future: _gateFuture,
+    return FutureBuilder<List<WorkspaceMembership>>(
+      future: _membershipsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -111,35 +63,30 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         if (snapshot.hasError) {
           return Scaffold(
             body: Center(
-              child: Text('Errore nel caricamento dei workspace: ${snapshot.error}'),
+              child:
+                  Text('Errore nel caricamento dei workspace: ${snapshot.error}'),
             ),
           );
         }
 
-        final gateData = snapshot.data;
-        if (gateData == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+        final memberships = snapshot.data ?? [];
 
-        if (gateData.role == 'customer') {
-          return const _CustomerWaitingPage();
-        }
-
-        final workspaces = gateData.workspaces;
-
-        if (workspaces.isEmpty) {
+        if (memberships.isEmpty) {
+          final uid = (widget.user as dynamic).uid as String;
           return CreateWorkspacePage(
-            user: widget.user,
+            userId: uid,
+            controller: _controller,
             onWorkspaceCreated: (id) => _selectWorkspace(id, role: 'admin'),
           );
         }
 
-        if (workspaces.length == 1) {
-          final membership = workspaces.first;
+        if (memberships.length == 1) {
+          final membership = memberships.first;
           scheduleMicrotask(
-            () => _selectWorkspace(membership.option.id, role: membership.role),
+            () => _selectWorkspace(
+              membership.option.id,
+              role: membership.role,
+            ),
           );
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -147,49 +94,15 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         }
 
         final rolesById = {
-          for (final membership in workspaces)
-            membership.option.id: membership.role,
+          for (final membership in memberships) membership.option.id: membership.role,
         };
 
         return WorkspacePickerPage(
-          workspaces: workspaces.map((e) => e.option).toList(),
+          workspaces: memberships.map((e) => e.option).toList(),
           onSelected: (workspace) =>
               _selectWorkspace(workspace.id, role: rolesById[workspace.id]),
         );
       },
-    );
-  }
-}
-
-class _WorkspaceGateData {
-  const _WorkspaceGateData({required this.role, required this.workspaces});
-
-  final String role;
-  final List<_WorkspaceMembership> workspaces;
-}
-
-class _WorkspaceMembership {
-  const _WorkspaceMembership({required this.option, required this.role});
-
-  final WorkspaceOption option;
-  final String role;
-}
-
-class _CustomerWaitingPage extends StatelessWidget {
-  const _CustomerWaitingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Account cliente creato. In attesa di collegamento a un\'attività.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
     );
   }
 }

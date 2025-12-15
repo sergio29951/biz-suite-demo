@@ -1,6 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/auth/auth_service.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,6 +11,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _authService = AuthService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -31,18 +32,13 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await _authService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-    } on FirebaseAuthException catch (e) {
-      final message = e.message ?? 'Errore di autenticazione';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Accesso non riuscito')), 
+        const SnackBar(content: Text('Accesso non riuscito')),
       );
     } finally {
       if (mounted) {

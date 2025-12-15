@@ -1,21 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/permissions/permissions.dart';
 import '../../core/session/workspace_session.dart';
+import 'controllers/customers_controller.dart';
 import 'customer_form_page.dart';
-import 'data/customers_repository.dart';
 import 'models/customer.dart';
 
 class CustomersPage extends StatelessWidget {
   CustomersPage({super.key})
-      : _repository = CustomersRepository(FirebaseFirestore.instance);
-  final CustomersRepository _repository;
+      : _controller = CustomersController(
+          repository: CustomersRepository(),
+        );
+  final CustomersController _controller;
 
   @override
   Widget build(BuildContext context) {
-    final activeWorkspaceId =
-        Provider.of<WorkspaceSession>(context, listen: true).activeWorkspaceId;
+    final session = Provider.of<WorkspaceSession>(context, listen: true);
+    final activeWorkspaceId = session.activeWorkspaceId;
+    final workspaceRole = session.memberRole ?? 'admin';
 
     if (activeWorkspaceId == null) {
       return const Scaffold(
@@ -30,7 +33,7 @@ class CustomersPage extends StatelessWidget {
         title: const Text('Clienti'),
       ),
       body: StreamBuilder<List<Customer>>(
-        stream: _repository.watchCustomers(activeWorkspaceId),
+        stream: _controller.watchList(activeWorkspaceId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -58,8 +61,12 @@ class CustomersPage extends StatelessWidget {
               return Dismissible(
                 key: ValueKey(customer.id),
                 direction: DismissDirection.endToStart,
-                confirmDismiss: (_) =>
-                    _confirmDelete(context, activeWorkspaceId, customer),
+                confirmDismiss: (_) => _confirmDelete(
+                  context,
+                  activeWorkspaceId,
+                  customer,
+                  workspaceRole,
+                ),
                 background: Container(
                   color: Colors.red.withOpacity(0.1),
                   alignment: Alignment.centerRight,
@@ -69,11 +76,17 @@ class CustomersPage extends StatelessWidget {
                 child: ListTile(
                   title: Text(customer.fullName),
                   subtitle: Text(customer.phone),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () =>
-                        _confirmDelete(context, activeWorkspaceId, customer),
-                  ),
+                  trailing: canDeleteCustomers(workspaceRole)
+                      ? IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _confirmDelete(
+                                context,
+                                activeWorkspaceId,
+                                customer,
+                                workspaceRole,
+                              ),
+                        )
+                      : null,
                   onTap: () => _openForm(
                     context,
                     activeWorkspaceId,
@@ -98,7 +111,7 @@ class CustomersPage extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => CustomerFormPage(
           workspaceId: workspaceId,
-          repository: _repository,
+          controller: _controller,
           customer: customer,
         ),
       ),
@@ -106,7 +119,14 @@ class CustomersPage extends StatelessWidget {
   }
 
   Future<bool> _confirmDelete(
-      BuildContext context, String workspaceId, Customer customer) async {
+    BuildContext context,
+    String workspaceId,
+    Customer customer,
+    String workspaceRole,
+  ) async {
+    if (!canDeleteCustomers(workspaceRole)) {
+      return false;
+    }
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -127,7 +147,7 @@ class CustomersPage extends StatelessWidget {
 
     if (shouldDelete == true) {
       try {
-        await _repository.deleteCustomer(workspaceId, customer.id);
+        await _controller.delete(workspaceId, customer.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cliente eliminato')),

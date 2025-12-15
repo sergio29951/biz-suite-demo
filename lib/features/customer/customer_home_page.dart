@@ -1,11 +1,12 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../core/auth/auth_service.dart';
 
 class CustomerHomePage extends StatelessWidget {
   const CustomerHomePage({super.key});
 
   Future<void> _signOut(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
+    await AuthService().signOut();
   }
 
   @override

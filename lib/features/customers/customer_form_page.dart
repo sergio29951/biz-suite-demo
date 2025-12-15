@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-import 'data/customers_repository.dart';
+import 'controllers/customers_controller.dart';
 import 'models/customer.dart';
 
 class CustomerFormPage extends StatefulWidget {
   const CustomerFormPage({
     super.key,
     required this.workspaceId,
-    required this.repository,
+    required this.controller,
     this.customer,
   });
 
   final String workspaceId;
-  final CustomersRepository repository;
+  final CustomersController controller;
   final Customer? customer;
 
   @override
@@ -135,7 +135,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
               : _notesController.text.trim(),
         );
 
-        await widget.repository.updateCustomer(widget.workspaceId, updated);
+        await widget.controller.update(widget.workspaceId, updated);
       } else {
         final newCustomer = Customer(
           id: '',
@@ -151,7 +151,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
           updatedAt: null,
         );
 
-        await widget.repository.addCustomer(widget.workspaceId, newCustomer);
+        await widget.controller.create(widget.workspaceId, newCustomer);
       }
 
       if (mounted) {

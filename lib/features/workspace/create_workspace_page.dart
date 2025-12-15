@@ -1,11 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class CreateWorkspacePage extends StatefulWidget {
-  const CreateWorkspacePage({super.key, required this.user, required this.onWorkspaceCreated});
+import 'controllers/workspace_controller.dart';
 
-  final User user;
+class CreateWorkspacePage extends StatefulWidget {
+  const CreateWorkspacePage(
+      {super.key,
+      required this.userId,
+      required this.controller,
+      required this.onWorkspaceCreated});
+
+  final String userId;
+  final WorkspaceController controller;
   final ValueChanged<String> onWorkspaceCreated;
 
   @override
@@ -28,28 +33,14 @@ class _CreateWorkspacePageState extends State<CreateWorkspacePage> {
     setState(() => _submitting = true);
 
     try {
-      final firestore = FirebaseFirestore.instance;
-      final timestamp = FieldValue.serverTimestamp();
-      final workspaces = firestore.collection('workspaces');
-      final workspaceDoc = await workspaces.add({
-        'name': _nameController.text.trim(),
-        'createdAt': timestamp,
-        'createdByUid': widget.user.uid,
-      });
+      final workspaceId = await widget.controller.createWorkspaceAndActivate(
+        widget.userId,
+        {
+          'name': _nameController.text.trim(),
+        },
+      );
 
-      await workspaceDoc.collection('members').doc(widget.user.uid).set({
-        'role': 'admin',
-        'joinedAt': timestamp,
-      });
-
-      await firestore.collection('memberships').doc('${widget.user.uid}_${workspaceDoc.id}').set({
-        'uid': widget.user.uid,
-        'workspaceId': workspaceDoc.id,
-        'role': 'admin',
-        'joinedAt': timestamp,
-      });
-
-      widget.onWorkspaceCreated(workspaceDoc.id);
+      widget.onWorkspaceCreated(workspaceId);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

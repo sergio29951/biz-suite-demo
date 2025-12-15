@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/customer.dart';
 
 class CustomersRepository {
-  CustomersRepository(this.firestore);
+  CustomersRepository({FirebaseFirestore? firestore})
+      : firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore firestore;
 

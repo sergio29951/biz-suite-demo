@@ -1,7 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../core/auth/auth_service.dart';
+import '../../core/users/user_profile_repository.dart';
+import '../workspace/data/workspace_repository.dart';
 enum SignupAccountType { business, customer }
 
 class SignupPage extends StatefulWidget {
@@ -12,6 +16,10 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
+  final _authService = AuthService();
+  final _userProfileRepository = UserProfileRepository();
+  final _workspaceRepository = WorkspaceRepository();
+  final _firestore = FirebaseFirestore.instance;
   final _formKey = GlobalKey<FormState>();
   SignupAccountType _accountType = SignupAccountType.business;
   bool _isSubmitting = false;
@@ -54,19 +62,13 @@ class _SignupPageState extends State<SignupPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      final auth = FirebaseAuth.instance;
-      final firestore = FirebaseFirestore.instance;
-
-      final cred = await auth.createUserWithEmailAndPassword(
+      final cred = await _authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
       final uid = cred.user!.uid;
       final now = FieldValue.serverTimestamp();
-      final userRef = firestore.collection('users').doc(uid);
-
-      final batch = firestore.batch();
       final userData = <String, dynamic>{
         'role': _accountType == SignupAccountType.business
             ? 'business'
@@ -76,31 +78,13 @@ class _SignupPageState extends State<SignupPage> {
       };
 
       if (_accountType == SignupAccountType.business) {
-        final workspaceRef = firestore.collection('workspaces').doc();
-        batch.set(workspaceRef, {
+        final workspaceId = await _workspaceRepository.createWorkspaceForAdmin(uid, {
           'name': _businessNameController.text.trim(),
           'category': _businessCategory,
           'phone': _businessPhoneController.text.trim(),
           'addressLine': _businessAddressController.text.trim(),
           'city': _businessCityController.text.trim(),
           'country': _businessCountryController.text.trim(),
-          'createdAt': now,
-          'createdByUid': uid,
-        });
-
-        final memberRef = workspaceRef.collection('members').doc(uid);
-        batch.set(memberRef, {
-          'role': 'admin',
-          'joinedAt': now,
-        });
-
-        final membershipRef =
-            firestore.collection('memberships').doc('${uid}_${workspaceRef.id}');
-        batch.set(membershipRef, {
-          'uid': uid,
-          'workspaceId': workspaceRef.id,
-          'role': 'admin',
-          'joinedAt': now,
         });
 
         userData['profile'] = {
@@ -110,10 +94,10 @@ class _SignupPageState extends State<SignupPage> {
           'addressLine': _businessAddressController.text.trim(),
           'city': _businessCityController.text.trim(),
           'country': _businessCountryController.text.trim(),
+          'workspaceId': workspaceId,
         };
       } else {
-        final customerRef = firestore.collection('customers').doc(uid);
-        batch.set(customerRef, {
+        await _firestore.collection('customers').doc(uid).set({
           'uid': uid,
           'fullName': _customerNameController.text.trim(),
           'phone': _customerPhoneController.text.trim(),
@@ -128,9 +112,7 @@ class _SignupPageState extends State<SignupPage> {
         };
       }
 
-      batch.set(userRef, userData);
-
-      await batch.commit();
+      await _userProfileRepository.ensureUserDoc(uid, userData);
 
       if (!mounted) return;
       Navigator.of(context).pop();

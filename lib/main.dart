@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +8,9 @@ import 'features/auth/login_page.dart';
 import 'features/workspace/workspace_gate.dart';
 import 'features/customer/customer_home_page.dart';
 import 'firebase_options.dart';
+import 'core/auth/auth_service.dart';
 import 'core/session/workspace_session.dart';
+import 'core/users/user_profile_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,8 @@ class _BizSuiteRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authService = AuthService();
+    final userRepository = UserProfileRepository();
     final baseTheme = ThemeData(
       useMaterial3: true,
       colorSchemeSeed: const Color(0xFF0D47A1),
@@ -37,7 +40,7 @@ class _BizSuiteRoot extends StatelessWidget {
         appBarTheme: const AppBarTheme(centerTitle: true),
       ),
       home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+        stream: authService.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
@@ -50,11 +53,8 @@ class _BizSuiteRoot extends StatelessWidget {
             return const LoginPage();
           }
 
-          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .snapshots(),
+          return StreamBuilder<Map<String, dynamic>?>(
+            stream: userRepository.watchUser(user.uid),
             builder: (context, userSnapshot) {
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
@@ -65,12 +65,13 @@ class _BizSuiteRoot extends StatelessWidget {
               if (userSnapshot.hasError) {
                 return Scaffold(
                   body: Center(
-                    child: Text('Errore nel caricamento utente: ${userSnapshot.error}'),
+                    child:
+                        Text('Errore nel caricamento utente: ${userSnapshot.error}'),
                   ),
                 );
               }
 
-              if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+              if (!userSnapshot.hasData) {
                 return const Scaffold(
                   body: Center(
                     child: Text('Profilo utente non trovato.'),
@@ -78,7 +79,7 @@ class _BizSuiteRoot extends StatelessWidget {
                 );
               }
 
-              final data = userSnapshot.data!.data() ?? {};
+              final data = userSnapshot.data ?? {};
               final role = data['role'] as String? ?? 'business';
 
               if (role == 'customer') {
