@@ -10,6 +10,7 @@ import 'features/dashboard/dashboard_page.dart';
 import 'features/customers/customers_page.dart';
 import 'features/offers/offers_page.dart';
 import 'features/staff/staff_page.dart';
+import 'features/transactions/transactions_page.dart';
 import 'features/workspace/permissions.dart';
 
 class BizSuiteApp extends StatelessWidget {
@@ -103,6 +104,11 @@ class _AppShellState extends State<AppShell> {
         label: 'Dashboard',
         icon: Icons.dashboard_outlined,
         page: DashboardPage(),
+      ),
+      _ShellTab(
+        label: 'Attività',
+        icon: Icons.event_note_outlined,
+        page: TransactionsPage(),
       ),
       _ShellTab(
         label: 'Clienti',
