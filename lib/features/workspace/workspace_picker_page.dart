@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 
-class WorkspaceOption {
-  const WorkspaceOption({required this.id, required this.name, this.role});
-
-  final String id;
-  final String name;
-  final String? role;
-}
+import 'models/workspace_option.dart';
 
 class WorkspacePickerPage extends StatelessWidget {
   const WorkspacePickerPage({super.key, required this.workspaces, required this.onSelected});

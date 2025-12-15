@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../app.dart';
 import '../../core/session/workspace_session.dart';
+import 'models/workspace_option.dart';
 import 'create_workspace_page.dart';
 import 'workspace_picker_page.dart';
 
@@ -65,7 +66,6 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
       return WorkspaceOption(
         id: workspaceSnap.id,
         name: workspaceData['name'] as String? ?? 'Workspace',
-        role: data['role'] as String?,
       );
     });
 
@@ -145,14 +145,6 @@ class _WorkspaceGateData {
 
   final String role;
   final List<WorkspaceOption> workspaces;
-}
-
-class WorkspaceOption {
-  const WorkspaceOption({required this.id, required this.name, this.role});
-
-  final String id;
-  final String name;
-  final String? role;
 }
 
 class _CustomerWaitingPage extends StatelessWidget {
