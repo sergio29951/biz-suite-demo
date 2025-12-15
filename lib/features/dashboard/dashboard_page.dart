@@ -85,7 +85,7 @@ class _WorkspaceSelectorState extends State<_WorkspaceSelector> {
         const SizedBox(width: 12),
         FilledButton.icon(
           onPressed: () {
-            widget.session.updateWorkspace(_controller.text);
+            widget.session.setActiveWorkspaceId(_controller.text);
           },
           icon: const Icon(Icons.check_circle_outline),
           label: const Text('Imposta'),
