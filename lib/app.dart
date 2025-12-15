@@ -2,8 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'features/auth/auth_gate.dart';
+import 'features/auth/login_page.dart';
+import 'features/auth/workspace_scope.dart';
+import 'features/dashboard/dashboard_page.dart';
 
 class BizSuiteApp extends StatelessWidget {
   const BizSuiteApp({super.key});
@@ -60,10 +63,58 @@ class _FirebaseInitializer extends StatelessWidget {
               );
             }
 
-            return const AuthGate();
+            final user = authSnapshot.data;
+            if (user == null) {
+              return const LoginPage();
+            }
+
+            return ChangeNotifierProvider(
+              create: (_) => WorkspaceSession(user),
+              child: const AppShell(),
+            );
           },
         );
       },
+    );
+  }
+}
+
+class AppShell extends StatefulWidget {
+  const AppShell({super.key});
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final pages = <Widget>[
+      const DashboardPage(),
+      const Center(child: Text('Impostazioni')), // placeholder tab
+    ];
+
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            label: 'Impostazioni',
+          ),
+        ],
+      ),
     );
   }
 }
