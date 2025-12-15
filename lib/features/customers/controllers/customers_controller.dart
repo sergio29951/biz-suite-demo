@@ -1,11 +1,17 @@
 import '../data/customers_repository.dart';
 import '../models/customer.dart';
 
+import '../../../core/session/workspace_session.dart';
+
 class CustomersController {
-  CustomersController({required CustomersRepository repository})
-      : _repository = repository;
+  CustomersController({
+    required CustomersRepository repository,
+    required WorkspaceSession session,
+  })  : _repository = repository,
+        _session = session;
 
   final CustomersRepository _repository;
+  final WorkspaceSession _session;
 
   Stream<List<Customer>> watchList(String workspaceId) {
     return _repository.watchCustomers(workspaceId);

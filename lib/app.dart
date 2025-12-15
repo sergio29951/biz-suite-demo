@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,15 +8,11 @@ import 'features/auth/login_page.dart';
 import 'core/session/workspace_session.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/customers/customers_page.dart';
-import 'features/customers/controllers/customers_controller.dart';
-import 'features/customers/data/customers_repository.dart';
 import 'features/offers/offers_page.dart';
-import 'features/offers/controllers/offers_controller.dart';
-import 'features/offers/data/offers_repository.dart';
 import 'features/staff/staff_page.dart';
 import 'features/transactions/transactions_page.dart';
-import 'features/transactions/data/transactions_repository.dart';
 import 'features/workspace/permissions.dart';
+import 'app/business_scope.dart';
 
 class BizSuiteApp extends StatelessWidget {
   const BizSuiteApp({super.key});
@@ -79,25 +74,8 @@ class _FirebaseInitializer extends StatelessWidget {
               return const LoginPage();
             }
 
-            return MultiProvider(
-              providers: [
-                Provider(
-                  create: (_) => CustomersController(
-                    repository: CustomersRepository(),
-                  ),
-                ),
-                Provider(
-                  create: (_) => OffersController(
-                    repository: OffersRepository(FirebaseFirestore.instance),
-                  ),
-                ),
-                Provider(
-                  create: (_) => TransactionsRepository(FirebaseFirestore.instance),
-                ),
-                ChangeNotifierProvider(
-                  create: (_) => WorkspaceSession(),
-                ),
-              ],
+            return ChangeNotifierProvider(
+              create: (_) => WorkspaceSession(),
               child: const AppShell(),
             );
           },
@@ -163,22 +141,24 @@ class _AppShellState extends State<AppShell> {
       );
     }
 
-    return Scaffold(
-      body: IndexedStack(
-        index: safeIndex,
-        children: tabs.map((t) => t.page).toList(),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: safeIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: tabs
-            .map(
-              (tab) => BottomNavigationBarItem(
-                icon: Icon(tab.icon),
-                label: tab.label,
-              ),
-            )
-            .toList(),
+    return BusinessScope(
+      child: Scaffold(
+        body: IndexedStack(
+          index: safeIndex,
+          children: tabs.map((t) => t.page).toList(),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: safeIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          items: tabs
+              .map(
+                (tab) => BottomNavigationBarItem(
+                  icon: Icon(tab.icon),
+                  label: tab.label,
+                ),
+              )
+              .toList(),
+        ),
       ),
     );
   }

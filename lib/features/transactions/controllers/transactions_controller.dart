@@ -1,12 +1,17 @@
 import '../../../core/permissions/permissions.dart';
+import '../../../core/session/workspace_session.dart';
 import '../data/transactions_repository.dart';
 import '../models/transaction.dart';
 
 class TransactionsController {
-  TransactionsController({required TransactionsRepository repository})
-      : _repository = repository;
+  TransactionsController({
+    required TransactionsRepository repository,
+    required WorkspaceSession session,
+  })  : _repository = repository,
+        _session = session;
 
   final TransactionsRepository _repository;
+  final WorkspaceSession _session;
 
   Stream<List<TransactionModel>> watch(
     String workspaceId, {
