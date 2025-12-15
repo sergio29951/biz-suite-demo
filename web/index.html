@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Biz Suite Demo - Web-first multi-tenant business app">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biz Suite Demo</title>
+  <link rel="manifest" href="manifest.json">
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script>
+    window.bizSuiteFirebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
+    };
+  </script>
+  <script defer src="main.dart.js" type="application/javascript"></script>
+</head>
+<body>
+  <noscript>Biz Suite Demo requires JavaScript to run.</noscript>
+  <div id="flutter_container"></div>
+</body>
+</html>
