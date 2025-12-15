@@ -8,15 +8,13 @@ import 'data/customers_repository.dart';
 import 'models/customer.dart';
 
 class CustomersPage extends StatelessWidget {
-  CustomersPage({super.key, this.workspaceId});
-
-  final String? workspaceId;
+  const CustomersPage({super.key});
   final CustomersRepository _repository =
       CustomersRepository(FirebaseFirestore.instance);
 
   @override
   Widget build(BuildContext context) {
-    final activeWorkspaceId = workspaceId ??
+    final activeWorkspaceId =
         Provider.of<WorkspaceSession>(context, listen: true).activeWorkspaceId;
 
     if (activeWorkspaceId == null) {
@@ -60,7 +58,8 @@ class CustomersPage extends StatelessWidget {
               return Dismissible(
                 key: ValueKey(customer.id),
                 direction: DismissDirection.endToStart,
-                confirmDismiss: (_) => _confirmDelete(context, customer),
+                confirmDismiss: (_) =>
+                    _confirmDelete(context, activeWorkspaceId, customer),
                 background: Container(
                   color: Colors.red.withOpacity(0.1),
                   alignment: Alignment.centerRight,
@@ -72,7 +71,8 @@ class CustomersPage extends StatelessWidget {
                   subtitle: Text(customer.phone),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _confirmDelete(context, customer),
+                    onPressed: () =>
+                        _confirmDelete(context, activeWorkspaceId, customer),
                   ),
                   onTap: () => _openForm(
                     context,
@@ -105,11 +105,8 @@ class CustomersPage extends StatelessWidget {
     );
   }
 
-  Future<bool> _confirmDelete(BuildContext context, Customer customer) async {
-    final workspaceId = workspaceId ??
-        Provider.of<WorkspaceSession>(context, listen: false).activeWorkspaceId;
-    if (workspaceId == null) return false;
-
+  Future<bool> _confirmDelete(
+      BuildContext context, String workspaceId, Customer customer) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
