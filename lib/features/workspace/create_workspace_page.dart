@@ -38,14 +38,14 @@ class _CreateWorkspacePageState extends State<CreateWorkspacePage> {
       });
 
       await workspaceDoc.collection('members').doc(widget.user.uid).set({
-        'role': 'owner',
+        'role': 'admin',
         'joinedAt': timestamp,
       });
 
       await firestore.collection('memberships').doc('${widget.user.uid}_${workspaceDoc.id}').set({
         'uid': widget.user.uid,
         'workspaceId': workspaceDoc.id,
-        'role': 'owner',
+        'role': 'admin',
         'joinedAt': timestamp,
       });
 

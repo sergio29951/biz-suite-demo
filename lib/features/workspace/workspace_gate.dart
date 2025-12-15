@@ -63,21 +63,33 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         return null;
       }
 
-      return WorkspaceOption(
-        id: workspaceSnap.id,
-        name: workspaceData['name'] as String? ?? 'Workspace',
+      final memberRole = _normalizeRole(data['role'] as String?);
+
+      return _WorkspaceMembership(
+        option: WorkspaceOption(
+          id: workspaceSnap.id,
+          name: workspaceData['name'] as String? ?? 'Workspace',
+        ),
+        role: memberRole,
       );
     });
 
     final results = await Future.wait(futures);
     return _WorkspaceGateData(
       role: role,
-      workspaces: results.whereType<WorkspaceOption>().toList(),
+      workspaces: results.whereType<_WorkspaceMembership>().toList(),
     );
   }
 
-  void _selectWorkspace(String workspaceId) {
-    context.read<WorkspaceSession>().setActiveWorkspaceId(workspaceId);
+  static String _normalizeRole(String? role) {
+    if (role == 'owner') return 'admin';
+    if (role == null || role.isEmpty) return 'staff';
+    return role;
+  }
+
+  void _selectWorkspace(String workspaceId, {String? role}) {
+    final session = context.read<WorkspaceSession>();
+    session.setActiveWorkspaceId(workspaceId, role: role);
   }
 
   @override
@@ -120,20 +132,29 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         if (workspaces.isEmpty) {
           return CreateWorkspacePage(
             user: widget.user,
-            onWorkspaceCreated: _selectWorkspace,
+            onWorkspaceCreated: (id) => _selectWorkspace(id, role: 'admin'),
           );
         }
 
         if (workspaces.length == 1) {
-          scheduleMicrotask(() => _selectWorkspace(workspaces.first.id));
+          final membership = workspaces.first;
+          scheduleMicrotask(
+            () => _selectWorkspace(membership.option.id, role: membership.role),
+          );
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
+        final rolesById = {
+          for (final membership in workspaces)
+            membership.option.id: membership.role,
+        };
+
         return WorkspacePickerPage(
-          workspaces: workspaces,
-          onSelected: (workspace) => _selectWorkspace(workspace.id),
+          workspaces: workspaces.map((e) => e.option).toList(),
+          onSelected: (workspace) =>
+              _selectWorkspace(workspace.id, role: rolesById[workspace.id]),
         );
       },
     );
@@ -144,7 +165,14 @@ class _WorkspaceGateData {
   const _WorkspaceGateData({required this.role, required this.workspaces});
 
   final String role;
-  final List<WorkspaceOption> workspaces;
+  final List<_WorkspaceMembership> workspaces;
+}
+
+class _WorkspaceMembership {
+  const _WorkspaceMembership({required this.option, required this.role});
+
+  final WorkspaceOption option;
+  final String role;
 }
 
 class _CustomerWaitingPage extends StatelessWidget {

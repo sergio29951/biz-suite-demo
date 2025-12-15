@@ -90,7 +90,7 @@ class _SignupPageState extends State<SignupPage> {
 
         final memberRef = workspaceRef.collection('members').doc(uid);
         batch.set(memberRef, {
-          'role': 'owner',
+          'role': 'admin',
           'joinedAt': now,
         });
 
@@ -99,7 +99,7 @@ class _SignupPageState extends State<SignupPage> {
         batch.set(membershipRef, {
           'uid': uid,
           'workspaceId': workspaceRef.id,
-          'role': 'owner',
+          'role': 'admin',
           'joinedAt': now,
         });
 

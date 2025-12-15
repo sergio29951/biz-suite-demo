@@ -8,6 +8,9 @@ import 'features/auth/login_page.dart';
 import 'core/session/workspace_session.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/customers/customers_page.dart';
+import 'features/offers/offers_page.dart';
+import 'features/staff/staff_page.dart';
+import 'features/workspace/permissions.dart';
 
 class BizSuiteApp extends StatelessWidget {
   const BizSuiteApp({super.key});
@@ -92,35 +95,74 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = <Widget>[
-      const DashboardPage(),
-      CustomersPage(),
-      const Center(child: Text('Impostazioni')), // placeholder tab
+    final session = Provider.of<WorkspaceSession>(context, listen: true);
+    final role = session.memberRole;
+
+    final tabs = <_ShellTab>[
+      const _ShellTab(
+        label: 'Dashboard',
+        icon: Icons.dashboard_outlined,
+        page: DashboardPage(),
+      ),
+      _ShellTab(
+        label: 'Clienti',
+        icon: Icons.people_alt_outlined,
+        page: CustomersPage(),
+      ),
+      _ShellTab(
+        label: 'Offerte',
+        icon: Icons.local_offer_outlined,
+        page: OffersPage(),
+      ),
+      if (canManageStaff(role))
+        _ShellTab(
+          label: 'Staff',
+          icon: Icons.group_outlined,
+          page: StaffPage(),
+        ),
+      const _ShellTab(
+        label: 'Impostazioni',
+        icon: Icons.settings_outlined,
+        page: Center(child: Text('Impostazioni')),
+      ),
     ];
+
+    final safeIndex = _currentIndex >= tabs.length ? 0 : _currentIndex;
+    if (safeIndex != _currentIndex) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => setState(() => _currentIndex = safeIndex),
+      );
+    }
 
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+        index: safeIndex,
+        children: tabs.map((t) => t.page).toList(),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: safeIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_outlined),
-            label: 'Clienti',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            label: 'Impostazioni',
-          ),
-        ],
+        items: tabs
+            .map(
+              (tab) => BottomNavigationBarItem(
+                icon: Icon(tab.icon),
+                label: tab.label,
+              ),
+            )
+            .toList(),
       ),
     );
   }
+}
+
+class _ShellTab {
+  const _ShellTab({
+    required this.label,
+    required this.icon,
+    required this.page,
+  });
+
+  final String label;
+  final IconData icon;
+  final Widget page;
 }
