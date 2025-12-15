@@ -1,8 +1,9 @@
 import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/auth/auth_service.dart';
+
 import '../../app.dart';
 import '../../core/session/workspace_session.dart';
 import 'controllers/workspace_controller.dart';
@@ -47,21 +48,7 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
   Widget build(BuildContext context) {
     final session = context.watch<WorkspaceSession>();
     if (session.activeWorkspaceId != null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Biz Suite'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Logout',
-              onPressed: () async {
-                await AuthService().signOut();
-              },
-            ),
-          ],
-        ),
-        body: const AppShell(),
-      );
+      return const AppShell();
     }
 
     return FutureBuilder<List<WorkspaceMembership>>(
@@ -76,8 +63,8 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         if (snapshot.hasError) {
           return Scaffold(
             body: Center(
-              child: Text(
-                  'Errore nel caricamento dei workspace: ${snapshot.error}'),
+              child:
+                  Text('Errore nel caricamento dei workspace: ${snapshot.error}'),
             ),
           );
         }
@@ -107,8 +94,7 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         }
 
         final rolesById = {
-          for (final membership in memberships)
-            membership.option.id: membership.role,
+          for (final membership in memberships) membership.option.id: membership.role,
         };
 
         return WorkspacePickerPage(

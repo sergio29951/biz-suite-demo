@@ -7,15 +7,14 @@ import 'package:firebase_core/firebase_core.dart';
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform => web;
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDyE-sZAPpjmRWecikrk9G0oPo7V_V1y00',
-    appId: '1:1086885236082:web:9288a1097a8a2553e7a1eb',
-    messagingSenderId: '1086885236082',
-    projectId: 'biz-suite-demo',
-    authDomain: 'biz-suite-demo.firebaseapp.com',
-    storageBucket: 'biz-suite-demo.firebasestorage.app',
-    measurementId: 'G-5V7X9Y960E',
-  );
-
   /// Web configuration.
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    authDomain: 'YOUR_PROJECT.firebaseapp.com',
+    storageBucket: 'YOUR_PROJECT.appspot.com',
+    measurementId: 'YOUR_MEASUREMENT_ID',
+  );
 }
