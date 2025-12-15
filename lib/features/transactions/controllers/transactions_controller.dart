@@ -13,7 +13,7 @@ class TransactionsController {
   final TransactionsRepository _repository;
   final WorkspaceSession _session;
 
-  Stream<List<TransactionModel>> watch(
+  Stream<List<WorkspaceTransaction>> watch(
     String workspaceId, {
     DateTime? from,
     DateTime? to,
@@ -29,12 +29,12 @@ class TransactionsController {
     );
   }
 
-  Future<void> create(String workspaceId, TransactionModel transaction) {
+  Future<void> create(String workspaceId, WorkspaceTransaction transaction) {
     _validate(transaction);
     return _repository.addTransaction(workspaceId, transaction);
   }
 
-  Future<void> update(String workspaceId, TransactionModel transaction) {
+  Future<void> update(String workspaceId, WorkspaceTransaction transaction) {
     _validate(transaction);
     return _repository.updateTransaction(workspaceId, transaction);
   }
@@ -50,7 +50,7 @@ class TransactionsController {
     return _repository.deleteTransaction(workspaceId, transactionId);
   }
 
-  void _validate(TransactionModel transaction) {
+  void _validate(WorkspaceTransaction transaction) {
     if (transaction.customerId.isEmpty) {
       throw ArgumentError('Cliente richiesto');
     }
