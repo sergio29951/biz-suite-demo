@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import 'app.dart' show AppShell;
 import 'features/auth/login_page.dart';
-import 'features/auth/workspace_scope.dart';
+import 'features/workspace/workspace_gate.dart';
 import 'firebase_options.dart';
+import 'core/session/workspace_session.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,8 +49,8 @@ class _BizSuiteRoot extends StatelessWidget {
           }
 
           return ChangeNotifierProvider(
-            create: (_) => WorkspaceSession(user),
-            child: const AppShell(),
+            create: (_) => WorkspaceSession(),
+            child: WorkspaceGate(user: user),
           );
         },
       ),

@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'features/auth/login_page.dart';
-import 'features/auth/workspace_scope.dart';
+import 'core/session/workspace_session.dart';
 import 'features/dashboard/dashboard_page.dart';
 
 class BizSuiteApp extends StatelessWidget {
@@ -69,7 +69,7 @@ class _FirebaseInitializer extends StatelessWidget {
             }
 
             return ChangeNotifierProvider(
-              create: (_) => WorkspaceSession(user),
+              create: (_) => WorkspaceSession(),
               child: const AppShell(),
             );
           },

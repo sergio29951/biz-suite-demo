@@ -19,7 +19,7 @@ class AuthGate extends StatelessWidget {
         }
 
         return ChangeNotifierProvider(
-          create: (_) => WorkspaceSession(user),
+          create: (_) => WorkspaceSession(),
           child: const DashboardPage(),
         );
       },
