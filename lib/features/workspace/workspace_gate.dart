@@ -20,17 +20,24 @@ class WorkspaceGate extends StatefulWidget {
 }
 
 class _WorkspaceGateState extends State<WorkspaceGate> {
-  late final Future<List<WorkspaceOption>> _workspacesFuture;
+  late final Future<_WorkspaceGateData> _gateFuture;
 
   @override
   void initState() {
     super.initState();
-    _workspacesFuture = _fetchWorkspaces();
+    _gateFuture = _loadData();
   }
 
-  Future<List<WorkspaceOption>> _fetchWorkspaces() async {
+  Future<_WorkspaceGateData> _loadData() async {
     final firestore = FirebaseFirestore.instance;
     final uid = widget.user.uid;
+
+    final userDoc = await firestore.collection('users').doc(uid).get();
+    final role = (userDoc.data()?['role'] as String?) ?? 'business';
+
+    if (role == 'customer') {
+      return _WorkspaceGateData(role: role, workspaces: const []);
+    }
 
     final membershipQuery = await firestore
         .collection('memberships')
@@ -38,7 +45,7 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
         .get();
 
     if (membershipQuery.docs.isEmpty) {
-      return [];
+      return _WorkspaceGateData(role: role, workspaces: const []);
     }
 
     final futures = membershipQuery.docs.map((doc) async {
@@ -63,7 +70,10 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
     });
 
     final results = await Future.wait(futures);
-    return results.whereType<WorkspaceOption>().toList();
+    return _WorkspaceGateData(
+      role: role,
+      workspaces: results.whereType<WorkspaceOption>().toList(),
+    );
   }
 
   void _selectWorkspace(String workspaceId) {
@@ -77,8 +87,8 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
       return const AppShell();
     }
 
-    return FutureBuilder<List<WorkspaceOption>>(
-      future: _workspacesFuture,
+    return FutureBuilder<_WorkspaceGateData>(
+      future: _gateFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -94,7 +104,18 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
           );
         }
 
-        final workspaces = snapshot.data ?? [];
+        final gateData = snapshot.data;
+        if (gateData == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (gateData.role == 'customer') {
+          return const _CustomerWaitingPage();
+        }
+
+        final workspaces = gateData.workspaces;
 
         if (workspaces.isEmpty) {
           return CreateWorkspacePage(
@@ -115,6 +136,40 @@ class _WorkspaceGateState extends State<WorkspaceGate> {
           onSelected: (workspace) => _selectWorkspace(workspace.id),
         );
       },
+    );
+  }
+}
+
+class _WorkspaceGateData {
+  const _WorkspaceGateData({required this.role, required this.workspaces});
+
+  final String role;
+  final List<WorkspaceOption> workspaces;
+}
+
+class WorkspaceOption {
+  const WorkspaceOption({required this.id, required this.name, this.role});
+
+  final String id;
+  final String name;
+  final String? role;
+}
+
+class _CustomerWaitingPage extends StatelessWidget {
+  const _CustomerWaitingPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Account cliente creato. In attesa di collegamento a un\'attività.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }
