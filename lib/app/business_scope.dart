@@ -9,6 +9,8 @@ import '../features/kpi/controllers/kpi_controller.dart';
 import '../features/kpi/data/kpi_repository.dart';
 import '../features/offers/controllers/offers_controller.dart';
 import '../features/offers/data/offers_repository.dart';
+import '../features/settings/controllers/workspace_settings_controller.dart';
+import '../features/settings/data/workspace_settings_repository.dart';
 import '../features/transactions/controllers/transactions_controller.dart';
 import '../features/transactions/data/transactions_repository.dart';
 
@@ -39,6 +41,10 @@ class BusinessScope extends StatelessWidget {
         Provider<KpiRepository>(
           create: (_) => KpiRepository(firestore: FirebaseFirestore.instance),
         ),
+        Provider<WorkspaceSettingsRepository>(
+          create: (_) =>
+              WorkspaceSettingsRepository(firestore: FirebaseFirestore.instance),
+        ),
         ProxyProvider2<CustomersRepository, WorkspaceSession, CustomersController>(
           update: (_, repository, workspaceSession, __) => CustomersController(
             repository: repository,
@@ -60,6 +66,14 @@ class BusinessScope extends StatelessWidget {
         ),
         ProxyProvider2<KpiRepository, WorkspaceSession, KpiController>(
           update: (_, repository, workspaceSession, __) => KpiController(
+            repository: repository,
+            session: workspaceSession,
+          ),
+        ),
+        ProxyProvider2<WorkspaceSettingsRepository, WorkspaceSession,
+            WorkspaceSettingsController>(
+          update: (_, repository, workspaceSession, __) =>
+              WorkspaceSettingsController(
             repository: repository,
             session: workspaceSession,
           ),

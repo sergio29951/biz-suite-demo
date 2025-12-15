@@ -13,6 +13,7 @@ import 'features/staff/staff_page.dart';
 import 'features/transactions/transactions_page.dart';
 import 'features/workspace/permissions.dart';
 import 'app/business_scope.dart';
+import 'features/settings/settings_page.dart';
 
 class BizSuiteApp extends StatelessWidget {
   const BizSuiteApp({super.key});
@@ -130,7 +131,7 @@ class _AppShellState extends State<AppShell> {
       const _ShellTab(
         label: 'Impostazioni',
         icon: Icons.settings_outlined,
-        page: Center(child: Text('Impostazioni')),
+        page: SettingsPage(),
       ),
     ];
 
