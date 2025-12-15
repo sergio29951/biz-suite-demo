@@ -8,9 +8,9 @@ import 'data/customers_repository.dart';
 import 'models/customer.dart';
 
 class CustomersPage extends StatelessWidget {
-  const CustomersPage({super.key});
-  final CustomersRepository _repository =
-      CustomersRepository(FirebaseFirestore.instance);
+  CustomersPage({super.key})
+      : _repository = CustomersRepository(FirebaseFirestore.instance);
+  final CustomersRepository _repository;
 
   @override
   Widget build(BuildContext context) {
